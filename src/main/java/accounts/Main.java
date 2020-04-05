@@ -1,40 +1,39 @@
 package accounts;
 
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Main {
 
-  public static void main(String[] args) {
+    public static void main(String[] args) {
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
 
-    ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
-    List<Account> accounts = Stream.generate(() -> new Account(10000))
-        .limit(10)
-        .collect(Collectors.toList());
+        Account account1 = new Account(100);
+        Account account2 = new Account(100);
+        Account account3 = new Account(100);
+        Account account4 = new Account(100);
+        Account account5 = new Account(100);
+        long sum = account1.getAmount() + account2.getAmount() + account3.getAmount() + account4.getAmount()
+                + account5.getAmount();
 
-    for (int i = 1; i <= accounts.size(); i++) {
-      executor.execute(new Transferor(accounts));
+        Transferor transferor1 = new Transferor(account2, account1, 10);
+        Transferor transferor2 = new Transferor(account3, account2, 10);
+        Transferor transferor3 = new Transferor(account4, account3, 10);
+        Transferor transferor4 = new Transferor(account1, account4, 10);
+        Transferor transferor5 = new Transferor(account5, account4, 10);
+
+        executor.execute(transferor1);
+        executor.execute(transferor2);
+        executor.execute(transferor3);
+        executor.execute(transferor4);
+        executor.execute(transferor5);
+
+        executor.shutdown();
+
+        while (!executor.isTerminated()) {
+        }
+        System.out.println("account5 should have: " + sum);
+        System.out.println("current amount for account5: p" + account5.getAmount());
+        System.out.println("END");
     }
-    try {
-      if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
-        executor.shutdownNow();
-      }
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    // print actual value of each account ( should be more then 0)
-    accounts.stream()
-        .forEach(account -> System.err.println(account.getAccount().longValue()));
-
-    Long sum = accounts.stream()
-        .map(account -> account.getAccount().longValue())
-        .reduce(0L, ((aLong, aLong2) -> aLong + aLong2));
-
-    System.err.println(sum);
-  }
 }

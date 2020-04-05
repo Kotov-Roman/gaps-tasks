@@ -1,32 +1,29 @@
 package accounts;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Account {
 
-  private AtomicLong account;
+    private Long amount;
+    private Lock lock;
+    public static final long MIN_AMOUNT = 0;
 
-  public Account(long amount) {
-        account = new AtomicLong(amount);
-  }
+    public Account(long amount) {
+        this.amount = amount;
+        lock = new ReentrantLock();
 
-  public void addMoney(long amount) {
-    account.addAndGet(amount);
-  }
-
-  public synchronized boolean tryToTakeMoney(long amount) {
-    if (account.longValue()>amount){
-      account.addAndGet(-amount);
-      return true;
     }
-    return false;
-  }
 
-  public AtomicLong getAccount() {
-    return account;
-  }
+    public long getAmount() {
+        return amount;
+    }
 
-  public void setAccount(AtomicLong account) {
-    this.account = account;
-  }
+    public void setAmount(long amount) {
+        this.amount = amount;
+    }
+
+    public Lock getLock() {
+        return lock;
+    }
 }
