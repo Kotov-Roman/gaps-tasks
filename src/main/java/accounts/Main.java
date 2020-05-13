@@ -1,18 +1,21 @@
 package accounts;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class Main {
+    private final static Logger LOGGER = Logger.getLogger(Main.class.getName());
 
     public static void main(String[] args) {
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
 
-        Account account1 = new Account(100);
-        Account account2 = new Account(100);
-        Account account3 = new Account(100);
-        Account account4 = new Account(100);
-        Account account5 = new Account(100);
+        Account account1 = new Account(100, "First account");
+        Account account2 = new Account(100, "Second account");
+        Account account3 = new Account(100, "Third account");
+        Account account4 = new Account(100, "Fourth account");
+        Account account5 = new Account(100, "Fifth account");
         long sum = account1.getAmount() + account2.getAmount() + account3.getAmount() + account4.getAmount()
                 + account5.getAmount();
 
@@ -30,10 +33,14 @@ public class Main {
 
         executor.shutdown();
 
-        while (!executor.isTerminated()) {
+        try {
+            executor.awaitTermination(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        System.out.println("account5 should have: " + sum);
-        System.out.println("current amount for account5: p" + account5.getAmount());
-        System.out.println("END");
+
+        LOGGER.info("account5 should have: " + sum);
+        LOGGER.info("current amount for account5: " + account5.getAmount());
+        LOGGER.info("END");
     }
 }

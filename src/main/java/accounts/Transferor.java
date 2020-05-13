@@ -1,6 +1,7 @@
 package accounts;
 
 import java.util.concurrent.locks.Lock;
+import java.util.logging.Logger;
 
 public class Transferor implements Runnable {
 
@@ -8,6 +9,7 @@ public class Transferor implements Runnable {
     private final Account credit;
     private final long transferringAmount;
     private int attemptCount;
+    private final static Logger LOGGER = Logger.getLogger(Transferor.class.getName());
 
     public Transferor(Account debit, Account credit, long transferringAmount) {
         this.debit = debit;
@@ -16,58 +18,63 @@ public class Transferor implements Runnable {
     }
 
     public void run() {
+        boolean areLocksAcquired = false;
         while (attemptCount < 100) {
             try {
-                boolean areLocksAcquired = tryToAcquireLocks();
+                areLocksAcquired = tryToAcquireLocks();
                 if (areLocksAcquired) {
                     if (isTransferringPossible()) {
                         doTransferring();
                         attemptCount = 0;
+                        continue;
                     }
                     attemptCount++;
-                    releaseLocks();
-                    System.err.println(Thread.currentThread().getName() + "is going to sleep cuz can't transfer");
-                    Thread.yield();
-                    Thread.sleep(100);
+                    Thread.sleep(10);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                System.exit(-1);
+            } finally {
+                if (areLocksAcquired) {
+                    releaseLocks();
+                }
             }
         }
-        System.err.println(Thread.currentThread().getName() + " TERMINATED");
+        LOGGER.info("run() is finished for " + Thread.currentThread().getName());
     }
 
     private void releaseLocks() {
-        debit.getLock().unlock();
         credit.getLock().unlock();
+        debit.getLock().unlock();
     }
 
     private void doTransferring() {
+        LOGGER.info(String.format("transferring %s from %s to %s ", transferringAmount, credit.getName(), debit.getName()));
         takeMoneyFromCredit();
         addMoneyToDebit();
-        System.err.println(Thread.currentThread().getName() + " transeffing finished");
     }
 
     private boolean isTransferringPossible() {
         long creditAmount = credit.getAmount();
-        if (creditAmount - transferringAmount < Account.MIN_AMOUNT) {
-            System.err.println("credit haven't enough money");
-            return false;
-        }
-        return true;
+        return creditAmount - transferringAmount >= Account.MIN_AMOUNT;
     }
 
     private boolean tryToAcquireLocks() {
         Lock debitLock = debit.getLock();
         if (debitLock.tryLock()) {
             Lock creditLock = credit.getLock();
-            if (creditLock.tryLock()) {
-                return true;
+            boolean isCreditAcquired = false;
+
+            try {
+                isCreditAcquired = creditLock.tryLock();
+                if (isCreditAcquired) {
+                    return true;
+                }
+            } finally {
+                if (!isCreditAcquired) {
+                    debitLock.unlock();
+                }
             }
-            debitLock.unlock();
         }
-        System.err.println(Thread.currentThread().getName() + " can't acquire locks");
         return false;
     }
 

@@ -7,12 +7,13 @@ public class Account {
 
     private Long amount;
     private Lock lock;
+    private String name;
     public static final long MIN_AMOUNT = 0;
 
-    public Account(long amount) {
+    public Account(long amount, String name) {
         this.amount = amount;
         lock = new ReentrantLock();
-
+        this.name = name;
     }
 
     public long getAmount() {
@@ -25,5 +26,9 @@ public class Account {
 
     public Lock getLock() {
         return lock;
+    }
+
+    public String getName() {
+        return name;
     }
 }
